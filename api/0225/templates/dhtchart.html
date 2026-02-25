@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="CACHE-CONTROL" CONTENT="NO-CACHE" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>실시간 온도, 습도 측정기</title>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+
+    <!-- Highcharts (최신 안정 CDN) -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+
+    <script>
+        var chart;   // 온도
+        var chart2;  // 습도
+        var pollUri = "/events";
+
+        function pollEvent() {
+            $.getJSON(pollUri, function (data) {
+
+                if (!data) return;
+
+                var t = new Date();
+                t.setHours(t.getHours() + 9); // 한국 시간 보정
+
+                chartAddPoint([t.getTime(), Number(data.temperature)]);
+                chart2AddPoint([t.getTime(), Number(data.humidity)]);
+            });
+
+            setTimeout(pollEvent, 5000); // 5초마다 요청
+        }
+
+        function chartAddPoint(point) {
+            var series = chart.series[0];
+            var shift = series.data.length > 20;
+            series.addPoint(point, true, shift);
+        }
+
+        function chart2AddPoint(point) {
+            var series = chart2.series[0];
+            var shift = series.data.length > 20;
+            series.addPoint(point, true, shift);
+        }
+
+        $(function () {
+
+            // 온도 차트
+            chart = Highcharts.chart('temp', {
+                chart: { type: 'spline' },
+                title: { text: '실시간 온도 데이터' },
+                xAxis: { type: 'datetime' },
+                yAxis: {
+                    title: { text: '온도 (°C)' }
+                },
+                series: [{
+                    name: '온도',
+                    data: []
+                }]
+            });
+
+            // 습도 차트
+            chart2 = Highcharts.chart('humi', {
+                chart: { type: 'spline' },
+                title: { text: '실시간 습도 데이터' },
+                xAxis: { type: 'datetime' },
+                yAxis: {
+                    title: { text: '습도 (%)' }
+                },
+                series: [{
+                    name: '습도',
+                    data: []
+                }]
+            });
+
+            pollEvent(); // 차트 생성 후 실행
+        });
+    </script>
+</head>
+
+<body>
+    <div id="temp" style="width: 100%; height: 300px;"></div>
+    <div id="humi" style="width: 100%; height: 300px;"></div>
+</body>
+</html>
